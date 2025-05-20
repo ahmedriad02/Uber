@@ -58,17 +58,18 @@ class MainVC: UIViewController {
         locationManager.startUpdatingLocation() //Starts the generation of updates that report the user’s current location.
         
         fetchPickedLocation { (success) in
-            
+
             if success {
-                self.convertAddress()
-                self.mapRoute()
-                self.convertCoordinates()
-                print("success")
+                self.convertAddress { _ in
+                    self.mapRoute()
+                    self.convertCoordinates()
+                    print("success")
+                }
             } else {
                 self.userLocationAnnotationView()
                 print("error")
             }
-            
+
         }
     }
     
@@ -298,24 +299,31 @@ extension MainVC: CLLocationManagerDelegate, MKMapViewDelegate { //Maps
     }
     
     
-    func convertAddress() { //An interface for converting between geographic coordinates and place names.
+    func convertAddress(completion: @escaping (_ success: Bool) -> ()) { //An interface for converting between geographic coordinates and place names.
         let geoCoder = CLGeocoder()
-        
-        geoCoder.geocodeAddressString(enterDestinationLbl.text!) { (placemarks, error) in
-            
+
+        guard let address = enterDestinationLbl.text, !address.isEmpty else {
+            completion(false)
+            return
+        }
+
+        geoCoder.geocodeAddressString(address) { (placemarks, error) in
+
             guard
                 let placemarks = placemarks,
                 let location = placemarks.first?.location
                 else {
+                    completion(false)
                     return
             }
-            
+
             self.destinationLocationLatitude = location.coordinate.latitude
             self.destinationLocationLongitude = location.coordinate.longitude
             print(location.coordinate.latitude)
             print(location.coordinate.longitude)
+            completion(true)
         }
-        
+
     }
     
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? { //custom annotation
